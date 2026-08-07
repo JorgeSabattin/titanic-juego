@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>¿Sobrevivió al Titanic? — Juego</title>
+<style>
+  :root {
+    --navy: #0b3d5c;
+    --navy-dark: #082a40;
+    --gold: #b98900;
+    --ink: #1a2a3a;
+    --muted: #64748b;
+    --surface: #ffffff;
+    --bg: #f2f5f7;
+    --line: #e2e8ee;
+    --si: #0072B2;
+    --no: #D55E00;
+    --si-bg: #e6f0fa;
+    --no-bg: #fbe9e0;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    margin: 0; padding: 0;
+    background: var(--bg);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+    color: var(--ink);
+  }
+  #app {
+    max-width: 480px;
+    margin: 0 auto;
+    min-height: 100vh;
+    background: var(--surface);
+    display: flex;
+    flex-direction: column;
+  }
+  header {
+    background: linear-gradient(135deg, var(--navy), var(--navy-dark));
+    color: white;
+    padding: 20px 20px 0;
+  }
+  header h1 {
+    font-size: 19px;
+    margin: 0 0 4px;
+    font-weight: 700;
+  }
+  header p {
+    margin: 0 0 16px;
+    font-size: 12.5px;
+    color: #cfe0ec;
+    line-height: 1.4;
+  }
+  .tabs {
+    display: flex;
+    gap: 4px;
+  }
+  .tab-btn {
+    flex: 1;
+    padding: 11px 6px;
+    background: rgba(255,255,255,0.08);
+    color: #cfe0ec;
+    border: none;
+    border-radius: 8px 8px 0 0;
+    font-size: 12.5px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .tab-btn.active {
+    background: var(--surface);
+    color: var(--navy);
+  }
+  .scorebar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 20px;
+    background: #eef3f6;
+    border-bottom: 1px solid var(--line);
+    font-size: 13px;
+  }
+  .scorebar .badge {
+    background: var(--navy);
+    color: white;
+    border-radius: 999px;
+    padding: 3px 10px;
+    font-weight: 600;
+    font-size: 12px;
+  }
+  main {
+    flex: 1;
+    padding: 18px 20px 28px;
+  }
+  .card-id {
+    text-align: center;
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 6px;
+  }
+  .intro-text {
+    text-align: center;
+    font-size: 13.5px;
+    color: var(--muted);
+    margin-bottom: 18px;
+    line-height: 1.5;
+  }
+  .clues {
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+    margin-bottom: 20px;
+  }
+  .clue-btn {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    padding: 13px 15px;
+    border-radius: 10px;
+    border: 1.5px solid var(--line);
+    background: var(--surface);
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--navy);
+    cursor: pointer;
+    text-align: left;
+    transition: background 0.15s, border-color 0.15s;
+  }
+  .clue-btn .label {
+    color: var(--muted);
+    font-weight: 500;
+    font-size: 12.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+  }
+  .clue-btn .value {
+    font-size: 14px;
+  }
+  .clue-btn.revealed {
+    background: #f7fafc;
+    border-color: var(--navy);
+  }
+  .clue-btn:active {
+    background: #eef3f6;
+  }
+  .clue-btn .value.hidden {
+    color: var(--gold);
+    font-style: italic;
+    font-weight: 700;
+  }
+  .guess-title {
+    text-align: center;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--navy);
+    margin: 22px 0 10px;
+  }
+  .guess-row {
+    display: flex;
+    gap: 10px;
+  }
+  .guess-btn {
+    flex: 1;
+    padding: 15px 8px;
+    border-radius: 10px;
+    border: none;
+    font-size: 15px;
+    font-weight: 700;
+    color: white;
+    cursor: pointer;
+  }
+  .guess-btn.si { background: var(--si); }
+  .guess-btn.no { background: var(--no); }
+  .guess-btn:disabled { opacity: 0.5; }
+
+  .result-panel {
+    margin-top: 18px;
+    border-radius: 12px;
+    padding: 18px;
+    text-align: center;
+  }
+  .result-panel.acierto { background: var(--si-bg); border: 1.5px solid var(--si); }
+  .result-panel.fallo { background: var(--no-bg); border: 1.5px solid var(--no); }
+  .result-panel .veredicto {
+    font-size: 16px;
+    font-weight: 800;
+    margin-bottom: 4px;
+  }
+  .result-panel.acierto .veredicto { color: var(--si); }
+  .result-panel.fallo .veredicto { color: var(--no); }
+  .result-panel .real {
+    font-size: 13px;
+    color: var(--ink);
+    margin-bottom: 12px;
+  }
+  .full-details {
+    background: white;
+    border-radius: 8px;
+    padding: 10px 12px;
+    text-align: left;
+    font-size: 12.5px;
+    color: var(--muted);
+    margin-bottom: 14px;
+  }
+  .full-details div { padding: 2px 0; }
+  .full-details b { color: var(--ink); }
+
+  .next-btn {
+    width: 100%;
+    padding: 14px;
+    border-radius: 10px;
+    border: none;
+    background: var(--navy);
+    color: white;
+    font-size: 14.5px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .reset-link {
+    display: block;
+    text-align: center;
+    margin-top: 16px;
+    font-size: 12px;
+    color: var(--muted);
+    text-decoration: underline;
+    background: none;
+    border: none;
+    cursor: pointer;
+  }
+  footer {
+    text-align: center;
+    font-size: 10.5px;
+    color: var(--muted);
+    padding: 10px 20px 18px;
+  }
+
+  /* --- Modo "Arma tu pasajero" --- */
+  .campo-form {
+    margin-bottom: 18px;
+  }
+  .campo-form .titulo-campo {
+    font-size: 12.5px;
+    font-weight: 700;
+    color: var(--navy);
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    margin-bottom: 8px;
+  }
+  .opciones-grupo {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .opcion-btn {
+    flex: 1;
+    min-width: 80px;
+    padding: 10px 6px;
+    border-radius: 9px;
+    border: 1.5px solid var(--line);
+    background: var(--surface);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--ink);
+    cursor: pointer;
+    text-align: center;
+  }
+  .opcion-btn.selected {
+    background: var(--navy);
+    border-color: var(--navy);
+    color: white;
+  }
+  .stepper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 18px;
+  }
+  .stepper button {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    border: none;
+    background: var(--navy);
+    color: white;
+    font-size: 20px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .stepper .valor {
+    font-size: 18px;
+    font-weight: 700;
+    min-width: 90px;
+    text-align: center;
+  }
+  .slider-row input[type=range] {
+    width: 100%;
+    accent-color: var(--navy);
+  }
+  .slider-valor {
+    text-align: center;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--navy);
+    margin-top: 4px;
+  }
+  .calc-btn {
+    width: 100%;
+    padding: 15px;
+    border-radius: 10px;
+    border: none;
+    background: var(--gold);
+    color: white;
+    font-size: 15px;
+    font-weight: 800;
+    cursor: pointer;
+    margin-top: 6px;
+  }
+  .prob-panel {
+    margin-top: 20px;
+    border-radius: 14px;
+    padding: 24px 18px;
+    text-align: center;
+    background: #f7fafc;
+    border: 1.5px solid var(--line);
+  }
+  .prob-panel.panel-si { background: var(--si-bg); border-color: var(--si); }
+  .prob-panel.panel-no { background: var(--no-bg); border-color: var(--no); }
+  .prob-veredicto {
+    font-size: 26px;
+    font-weight: 800;
+    line-height: 1.2;
+    letter-spacing: 0.5px;
+  }
+  .prob-panel.panel-si .prob-veredicto { color: var(--si); }
+  .prob-panel.panel-no .prob-veredicto { color: var(--no); }
+  .prob-label {
+    font-size: 13px;
+    color: var(--ink);
+    margin-top: 8px;
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <h1>¿Sobrevivió al Titanic?</h1>
+    <p>Explora datos reales del hundimiento y descubre qué factores influían en la supervivencia.</p>
+    <div class="tabs">
+      <button class="tab-btn" id="tab-adivina" onclick="cambiarModo('adivina')">Adivina un pasajero</button>
+      <button class="tab-btn" id="tab-construir" onclick="cambiarModo('construir')">Arma tu pasajero</button>
+    </div>
+  </header>
+  <div class="scorebar" id="scorebar"></div>
+  <main id="main"></main>
+  <footer>Modelo y datos reales de 891 pasajeros del Titanic (1912) · Actividad de ciencia de datos</footer>
+</div>
+
+<script>
+const PASAJEROS = [{"numero": 1, "clase": "3ª clase", "tarifa": "£23.45", "titulo": "Sr. (Mr.)", "familia": "Viaja con 3 familiar(es)", "camarote": "Sin camarote registrado", "puerto": "Southampton (Inglaterra)", "sobrevivio": false}, {"numero": 2, "clase": "2ª clase", "tarifa": "£18.75", "titulo": "Joven (Master)", "familia": "Viaja con 2 familiar(es)", "camarote": "Sin camarote registrado", "puerto": "Southampton (Inglaterra)", "sobrevivio": true}, {"numero": 3, "clase": "1ª clase", "tarifa": "£51.86", "titulo": "Sr. (Mr.)", "familia": "Viaja solo/a", "camarote": "Con camarote registrado", "puerto": "Southampton (Inglaterra)", "sobrevivio": false}, {"numero": 4, "clase": "1ª clase", "tarifa": "£39.60", "titulo": "Título poco común", "familia": "Viaja solo/a", "camarote": "Sin camarote registrado", "puerto": "Cherbourg (Francia)", "sobrevivio": false}, {"numero": 5, "clase": "3ª clase", "tarifa": "£7.23", "titulo": "Srta. (Miss)", "familia": "Viaja solo/a", "camarote": "Sin camarote registrado", "puerto": "Cherbourg (Francia)", "sobrevivio": true}, {"numero": 6, "clase": "1ª clase", "tarifa": "£135.63", "titulo": "Srta. (Miss)", "familia": "Viaja solo/a", "camarote": "Con camarote registrado", "puerto": "Cherbourg (Francia)", "sobrevivio": true}, {"numero": 7, "clase": "1ª clase", "tarifa": "£61.38", "titulo": "Sr. (Mr.)", "familia": "Viaja con 1 familiar(es)", "camarote": "Sin camarote registrado", "puerto": "Cherbourg (Francia)", "sobrevivio": false}, {"numero": 8, "clase": "3ª clase", "tarifa": "£8.05", "titulo": "Sr. (Mr.)", "familia": "Viaja solo/a", "camarote": "Sin camarote registrado", "puerto": "Southampton (Inglaterra)", "sobrevivio": false}, {"numero": 9, "clase": "1ª clase", "tarifa": "£164.87", "titulo": "Srta. (Miss)", "familia": "Viaja con 2 familiar(es)", "camarote": "Con camarote registrado", "puerto": "Southampton (Inglaterra)", "sobrevivio": true}, {"numero": 10, "clase": "1ª clase", "tarifa": "£83.16", "titulo": "Srta. (Miss)", "familia": "Viaja solo/a", "camarote": "Con camarote registrado", "puerto": "Cherbourg (Francia)", "sobrevivio": true}, {"numero": 11, "clase": "2ª clase", "tarifa": "£27.00", "titulo": "Sra. (Mrs.)", "familia": "Viaja con 3 familiar(es)", "camarote": "Sin camarote registrado", "puerto": "Southampton (Inglaterra)", "sobrevivio": true}, {"numero": 12, "clase": "2ª clase", "tarifa": "£27.72", "titulo": "Sr. (Mr.)", "familia": "Viaja con 1 familiar(es)", "camarote": "Sin camarote registrado", "puerto": "Cherbourg (Francia)", "sobrevivio": false}, {"numero": 13, "clase": "3ª clase", "tarifa": "£8.66", "titulo": "Sr. (Mr.)", "familia": "Viaja solo/a", "camarote": "Sin camarote registrado", "puerto": "Southampton (Inglaterra)", "sobrevivio": true}, {"numero": 14, "clase": "1ª clase", "tarifa": "£262.38", "titulo": "Srta. (Miss)", "familia": "Viaja con 4 familiar(es)", "camarote": "Con camarote registrado", "puerto": "Cherbourg (Francia)", "sobrevivio": true}, {"numero": 15, "clase": "1ª clase", "tarifa": "£39.60", "titulo": "Título poco común", "familia": "Viaja con 1 familiar(es)", "camarote": "Con camarote registrado", "puerto": "Cherbourg (Francia)", "sobrevivio": true}, {"numero": 16, "clase": "3ª clase", "tarifa": "£7.90", "titulo": "Sr. (Mr.)", "familia": "Viaja solo/a", "camarote": "Sin camarote registrado", "puerto": "Southampton (Inglaterra)", "sobrevivio": false}, {"numero": 17, "clase": "3ª clase", "tarifa": "£8.05", "titulo": "Sr. (Mr.)", "familia": "Viaja solo/a", "camarote": "Sin camarote registrado", "puerto": "Southampton (Inglaterra)", "sobrevivio": true}, {"numero": 18, "clase": "1ª clase", "tarifa": "£91.08", "titulo": "Sr. (Mr.)", "familia": "Viaja con 1 familiar(es)", "camarote": "Con camarote registrado", "puerto": "Cherbourg (Francia)", "sobrevivio": true}, {"numero": 19, "clase": "3ª clase", "tarifa": "£7.75", "titulo": "Sr. (Mr.)", "familia": "Viaja solo/a", "camarote": "Sin camarote registrado", "puerto": "Southampton (Inglaterra)", "sobrevivio": false}, {"numero": 20, "clase": "3ª clase", "tarifa": "£13.42", "titulo": "Srta. (Miss)", "familia": "Viaja con 1 familiar(es)", "camarote": "Sin camarote registrado", "puerto": "Cherbourg (Francia)", "sobrevivio": true}, {"numero": 21, "clase": "3ª clase", "tarifa": "£7.75", "titulo": "Sr. (Mr.)", "familia": "Viaja con 1 familiar(es)", "camarote": "Sin camarote registrado", "puerto": "Queenstown (Irlanda)", "sobrevivio": false}, {"numero": 22, "clase": "1ª clase", "tarifa": "£79.65", "titulo": "Sr. (Mr.)", "familia": "Viaja con 2 familiar(es)", "camarote": "Con camarote registrado", "puerto": "Southampton (Inglaterra)", "sobrevivio": false}, {"numero": 23, "clase": "3ª clase", "tarifa": "£7.05", "titulo": "Sr. (Mr.)", "familia": "Viaja solo/a", "camarote": "Sin camarote registrado", "puerto": "Southampton (Inglaterra)", "sobrevivio": false}, {"numero": 24, "clase": "3ª clase", "tarifa": "£7.90", "titulo": "Sr. (Mr.)", "familia": "Viaja solo/a", "camarote": "Sin camarote registrado", "puerto": "Southampton (Inglaterra)", "sobrevivio": false}, {"numero": 25, "clase": "3ª clase", "tarifa": "£8.66", "titulo": "Srta. (Miss)", "familia": "Viaja solo/a", "camarote": "Sin camarote registrado", "puerto": "Southampton (Inglaterra)", "sobrevivio": false}, {"numero": 26, "clase": "3ª clase", "tarifa": "£14.46", "titulo": "Srta. (Miss)", "familia": "Viaja solo/a", "camarote": "Sin camarote registrado", "puerto": "Cherbourg (Francia)", "sobrevivio": false}, {"numero": 27, "clase": "1ª clase", "tarifa": "£27.72", "titulo": "Sra. (Mrs.)", "familia": "Viaja solo/a", "camarote": "Con camarote registrado", "puerto": "Cherbourg (Francia)", "sobrevivio": true}, {"numero": 28, "clase": "3ª clase", "tarifa": "£11.13", "titulo": "Joven (Master)", "familia": "Viaja con 2 familiar(es)", "camarote": "Sin camarote registrado", "puerto": "Southampton (Inglaterra)", "sobrevivio": true}, {"numero": 29, "clase": "1ª clase", "tarifa": "£30.00", "titulo": "Srta. (Miss)", "familia": "Viaja solo/a", "camarote": "Con camarote registrado", "puerto": "Southampton (Inglaterra)", "sobrevivio": true}, {"numero": 30, "clase": "1ª clase", "tarifa": "£49.50", "titulo": "Sr. (Mr.)", "familia": "Viaja solo/a", "camarote": "Sin camarote registrado", "puerto": "Cherbourg (Francia)", "sobrevivio": false}, {"numero": 31, "clase": "2ª clase", "tarifa": "£13.00", "titulo": "Título poco común", "familia": "Viaja solo/a", "camarote": "Sin camarote registrado", "puerto": "Southampton (Inglaterra)", "sobrevivio": false}, {"numero": 32, "clase": "2ª clase", "tarifa": "£26.00", "titulo": "Sra. (Mrs.)", "familia": "Viaja con 1 familiar(es)", "camarote": "Sin camarote registrado", "puerto": "Southampton (Inglaterra)", "sobrevivio": true}];
+const MODELO = {"feature_cols": ["Pclass", "Sexo01", "Edad", "TamanoFamilia", "TieneCamarote", "LogTarifa", "Titulo_Mrs", "Titulo_Miss", "Titulo_Master", "Titulo_Otro", "Puerto_C", "Puerto_Q"], "coef": [-0.6388234598009493, 1.14455347686839, -0.40305851709883855, -0.831392546225772, 0.26333718436433645, 0.3022109849787774, 0.46505531936445604, 0.20007860659133975, 0.683692745053548, 0.02974999371960223, 0.13968291146905326, 0.0590685216334664], "intercept": -0.683213209870351, "scaler_mean": [2.3115860517435323, 0.35095613048368957, 29.06543307086614, 1.9066366704161979, 0.22722159730033745, 2.9590236867667343, 0.140607424071991, 0.20697412823397077, 0.04499437570303712, 0.025871766029246346, 0.1889763779527559, 0.08661417322834646], "scaler_scale": [0.8342301865342121, 0.4772692373908096, 13.262696158846284, 1.6137941806943372, 0.4190369232187311, 0.9672051666855065, 0.3476161336414498, 0.40513681451549005, 0.20729177952376954, 0.15875269368352238, 0.39148985494979693, 0.28126883621246856], "titulos": ["Mr", "Mrs", "Miss", "Master", "Otro"], "puertos": ["S", "C", "Q"], "tasa_base": 0.38245219347581555};
+
+const PISTAS = [
+  { key: "clase",    label: "Clase del pasaje" },
+  { key: "tarifa",   label: "Tarifa pagada" },
+  { key: "titulo",   label: "Título social" },
+  { key: "familia",  label: "Familia a bordo" },
+  { key: "camarote", label: "Camarote" },
+  { key: "puerto",   label: "Puerto de embarque" },
+];
+
+let modo = "adivina";
+
+/* ---------- Modo 1: Adivina un pasajero real ---------- */
+let mazo = [];
+let actual = null;
+let reveladas = new Set();
+let guessHecho = null;
+let aciertos = 0, intentos = 0, vistos = 0;
+
+function shuffle(arr) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function nuevoMazo() { mazo = shuffle(PASAJEROS); }
+
+function siguientePasajero() {
+  if (mazo.length === 0) nuevoMazo();
+  actual = mazo.pop();
+  reveladas = new Set();
+  guessHecho = null;
+  vistos += 1;
+  render();
+}
+
+function toggleClue(key) {
+  if (guessHecho !== null) return;
+  reveladas.add(key);
+  render();
+}
+
+function hacerGuess(esSi) {
+  if (guessHecho !== null) return;
+  guessHecho = esSi;
+  intentos += 1;
+  if (esSi === actual.sobrevivio) aciertos += 1;
+  render();
+}
+
+function reiniciarJuego() {
+  aciertos = 0; intentos = 0; vistos = 0;
+  nuevoMazo();
+  siguientePasajero();
+}
+
+/* ---------- Modo 2: Arma tu pasajero ---------- */
+const CONSTRUCTOR = {
+  clase: 3,
+  sexo: "hombre",
+  edad: 30,
+  titulo: "Mr",
+  familiares: 0,
+  camarote: 0,
+  puerto: "S",
+  tarifa: 15,
+};
+let probCalculada = null;
+
+const TITULO_TEXTO = { Mr: "Sr. (Mr.)", Mrs: "Sra. (Mrs.)", Miss: "Srta. (Miss)", Master: "Joven (Master)", Otro: "Título poco común" };
+const PUERTO_TEXTO = { S: "Southampton", C: "Cherbourg", Q: "Queenstown" };
+
+function setCampo(campo, valor) {
+  CONSTRUCTOR[campo] = valor;
+  probCalculada = null;
+  render();
+}
+
+function cambiarFamiliares(delta) {
+  CONSTRUCTOR.familiares = Math.max(0, Math.min(8, CONSTRUCTOR.familiares + delta));
+  probCalculada = null;
+  render();
+}
+
+function calcularProbabilidad() {
+  const tamanoFamilia = CONSTRUCTOR.familiares + 1;
+  const logTarifa = Math.log1p(CONSTRUCTOR.tarifa);
+  const fila = {
+    Pclass: CONSTRUCTOR.clase,
+    Sexo01: CONSTRUCTOR.sexo === "mujer" ? 1 : 0,
+    Edad: CONSTRUCTOR.edad,
+    TamanoFamilia: tamanoFamilia,
+    TieneCamarote: CONSTRUCTOR.camarote,
+    LogTarifa: logTarifa,
+  };
+  for (const t of MODELO.titulos.slice(1)) {
+    fila["Titulo_" + t] = (CONSTRUCTOR.titulo === t) ? 1 : 0;
+  }
+  for (const p of MODELO.puertos.slice(1)) {
+    fila["Puerto_" + p] = (CONSTRUCTOR.puerto === p) ? 1 : 0;
+  }
+  let z = MODELO.intercept;
+  MODELO.feature_cols.forEach((col, i) => {
+    const valor = fila[col];
+    const estandarizado = (valor - MODELO.scaler_mean[i]) / MODELO.scaler_scale[i];
+    z += estandarizado * MODELO.coef[i];
+  });
+  probCalculada = 1 / (1 + Math.exp(-z));
+  render();
+}
+
+/* ---------- Render ---------- */
+function cambiarModo(nuevo) {
+  modo = nuevo;
+  render();
+}
+
+function render() {
+  document.getElementById("tab-adivina").classList.toggle("active", modo === "adivina");
+  document.getElementById("tab-construir").classList.toggle("active", modo === "construir");
+
+  const scorebar = document.getElementById("scorebar");
+  const main = document.getElementById("main");
+
+  if (modo === "adivina") {
+    scorebar.innerHTML = `<span>Pasajeros vistos: <b>${vistos}</b></span><span class="badge">Aciertos: ${aciertos}/${intentos}</span>`;
+    renderAdivina(main);
+  } else {
+    scorebar.innerHTML = `<span>Modo laboratorio</span><span class="badge">Tasa histórica: ${Math.round(MODELO.tasa_base * 100)}%</span>`;
+    renderConstruir(main);
+  }
+}
+
+function renderAdivina(main) {
+  let html = `<div class="card-id">Pasajero N&deg; ${String(actual.numero).padStart(2, "0")}</div>`;
+  html += `<div class="intro-text">Toca cada pista para revelarla. Tú decides cuántas ver antes de responder.</div>`;
+  html += `<div class="clues">`;
+  for (const p of PISTAS) {
+    const revelado = reveladas.has(p.key);
+    const valor = revelado ? actual[p.key] : "Toca para revelar";
+    html += `
+      <button class="clue-btn ${revelado ? "revealed" : ""}" onclick="toggleClue('${p.key}')">
+        <span class="label">${p.label}</span>
+        <span class="value ${revelado ? "" : "hidden"}">${valor}</span>
+      </button>`;
+  }
+  html += `</div>`;
+
+  if (guessHecho === null) {
+    html += `<div class="guess-title">¿Tu predicción?</div>`;
+    html += `<div class="guess-row">
+      <button class="guess-btn si" onclick="hacerGuess(true)">Sobrevivió</button>
+      <button class="guess-btn no" onclick="hacerGuess(false)">No sobrevivió</button>
+    </div>`;
+  } else {
+    const acerto = guessHecho === actual.sobrevivio;
+    html += `<div class="result-panel ${acerto ? "acierto" : "fallo"}">
+      <div class="veredicto">${acerto ? "¡Acertaste!" : "No acertaste"}</div>
+      <div class="real">Este pasajero <b>${actual.sobrevivio ? "sí sobrevivió" : "no sobrevivió"}</b> al hundimiento.</div>
+      <div class="full-details">
+        ${PISTAS.map(p => `<div><b>${p.label}:</b> ${actual[p.key]}</div>`).join("")}
+      </div>
+      <button class="next-btn" onclick="siguientePasajero()">Siguiente pasajero</button>
+    </div>`;
+  }
+  html += `<button class="reset-link" onclick="reiniciarJuego()">Reiniciar puntaje y mezclar de nuevo</button>`;
+  main.innerHTML = html;
+}
+
+function renderConstruir(main) {
+  let html = `<div class="intro-text">Arma un pasajero hipotético eligiendo todas sus características (incluida edad y sexo) y descubre qué probabilidad histórica de sobrevivir habría tenido, según un modelo entrenado con los 891 pasajeros reales del Titanic.</div>`;
+
+  // Clase
+  html += `<div class="campo-form">
+    <div class="titulo-campo">Clase del pasaje</div>
+    <div class="opciones-grupo">
+      ${[1,2,3].map(c => `<button class="opcion-btn ${CONSTRUCTOR.clase===c?"selected":""}" onclick="setCampo('clase', ${c})">${c}ª clase</button>`).join("")}
+    </div>
+  </div>`;
+
+  // Sexo
+  html += `<div class="campo-form">
+    <div class="titulo-campo">Sexo</div>
+    <div class="opciones-grupo">
+      <button class="opcion-btn ${CONSTRUCTOR.sexo==="hombre"?"selected":""}" onclick="setCampo('sexo', 'hombre')">Hombre</button>
+      <button class="opcion-btn ${CONSTRUCTOR.sexo==="mujer"?"selected":""}" onclick="setCampo('sexo', 'mujer')">Mujer</button>
+    </div>
+  </div>`;
+
+  // Edad
+  html += `<div class="campo-form">
+    <div class="titulo-campo">Edad</div>
+    <div class="slider-row">
+      <input type="range" min="0" max="80" step="1" value="${CONSTRUCTOR.edad}" oninput="setCampo('edad', parseInt(this.value))">
+    </div>
+    <div class="slider-valor">${CONSTRUCTOR.edad} años</div>
+  </div>`;
+
+  // Título
+  html += `<div class="campo-form">
+    <div class="titulo-campo">Título social</div>
+    <div class="opciones-grupo">
+      ${Object.entries(TITULO_TEXTO).map(([k,v]) => `<button class="opcion-btn ${CONSTRUCTOR.titulo===k?"selected":""}" onclick="setCampo('titulo', '${k}')">${v}</button>`).join("")}
+    </div>
+  </div>`;
+
+  // Familiares
+  html += `<div class="campo-form">
+    <div class="titulo-campo">Familiares a bordo (sin contarlo a él/ella)</div>
+    <div class="stepper">
+      <button onclick="cambiarFamiliares(-1)">−</button>
+      <span class="valor">${CONSTRUCTOR.familiares === 0 ? "Viaja solo/a" : CONSTRUCTOR.familiares + " familiar(es)"}</span>
+      <button onclick="cambiarFamiliares(1)">+</button>
+    </div>
+  </div>`;
+
+  // Camarote
+  html += `<div class="campo-form">
+    <div class="titulo-campo">Camarote</div>
+    <div class="opciones-grupo">
+      <button class="opcion-btn ${CONSTRUCTOR.camarote===1?"selected":""}" onclick="setCampo('camarote', 1)">Con camarote registrado</button>
+      <button class="opcion-btn ${CONSTRUCTOR.camarote===0?"selected":""}" onclick="setCampo('camarote', 0)">Sin camarote registrado</button>
+    </div>
+  </div>`;
+
+  // Puerto
+  html += `<div class="campo-form">
+    <div class="titulo-campo">Puerto de embarque</div>
+    <div class="opciones-grupo">
+      ${Object.entries(PUERTO_TEXTO).map(([k,v]) => `<button class="opcion-btn ${CONSTRUCTOR.puerto===k?"selected":""}" onclick="setCampo('puerto', '${k}')">${v}</button>`).join("")}
+    </div>
+  </div>`;
+
+  // Tarifa
+  html += `<div class="campo-form">
+    <div class="titulo-campo">Tarifa pagada</div>
+    <div class="slider-row">
+      <input type="range" min="0" max="200" step="1" value="${CONSTRUCTOR.tarifa}" oninput="setCampo('tarifa', parseInt(this.value))">
+    </div>
+    <div class="slider-valor">£${CONSTRUCTOR.tarifa}</div>
+  </div>`;
+
+  html += `<button class="calc-btn" onclick="calcularProbabilidad()">¿Sobrevive o no sobrevive?</button>`;
+
+  if (probCalculada !== null) {
+    const sobrevive = probCalculada >= 0.5;
+    html += `<div class="prob-panel ${sobrevive ? "panel-si" : "panel-no"}">
+      <div class="prob-veredicto">${sobrevive ? "SOBREVIVE" : "NO SOBREVIVE"}</div>
+      <div class="prob-label">Según el modelo entrenado con los pasajeros reales del Titanic, un pasajero con estas características ${sobrevive ? "habría sobrevivido" : "no habría sobrevivido"} al hundimiento.</div>
+    </div>`;
+  }
+
+  main.innerHTML = html;
+}
+
+nuevoMazo();
+actual = mazo.pop();
+vistos = 1;
+render();
+</script>
+</body>
+</html>
